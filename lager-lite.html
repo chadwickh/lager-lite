@@ -1,0 +1,87 @@
+<head>
+  <title>lager-lite</title>
+</head>
+
+<body>
+  {{> hello}}
+</body>
+
+<template name="hello">
+  <h1> {{greeting}} </h1>
+
+  <br>
+
+  <input type="file" id="input" multiple />
+
+  <div class="progress progress-striped">
+    <div class="progress-bar progress-bar-info" role="progressbar" style="width: {{uploadPercent}}%">
+      <span style="padding: 2px; float: left; color: #000;">
+       {{uploadPercent}}%
+      </span>
+    </div>
+  </div>
+
+  {{arraySerial}}
+
+  <div class="row" style="height:800px">
+    <div class="col-md-10" style="height:800px">
+
+      <ul class="nav nav-tabs">
+        <li class="active"><a href="#CPU" data-toggle="tab">CPU Utilization</a></li>
+        <li><a href="#CWP" data-toggle="tab">Cache Write Pending</a></li>
+        <li><a href="#Port_IOPS" data-toggle="tab">Port IOPS</a></li>
+        <li><a href="#Port_MBPS" data-toggle="tab">Port MBPS</a></li>
+        <li><a href="#DP_IOPS" data-toggle="tab">DP Pool IOPS</a></li>
+        <li><a href="#DP_MBPS" data-toggle="tab">DP Pool MBPS</a></li>
+        <li><a href="#LUN_IOPS" data-toggle="tab">LUN IOPS</a></li>
+        <li><a href="#LUN_MBPS" data-toggle="tab">LUN MBPS</a></li>
+        <li><a href="#LUN_TAGS" data-toggle="tab">LUN Tags (Queue Depth)</a></li>
+        <li><a href="#DISK_BUSY" data-toggle="tab">Disk % Busy</a></li>
+      </ul>
+    
+      <div class="tab-content">
+        <div class="tab-pane active" id="CPU" style="width:100%;height:800px;position:absolute">
+           <div class="col-md-8" id="CPU_chart" style="height:100%"></div>
+           <div class="col-md-4" id="CPU_legend"></div>
+        </div>
+        <div class="tab-pane" id="CWP" style="width:100%;height:800px">
+           <div class="col-md-8" id="CWP_chart" style="height:100%"></div>
+           <div class="col-md-4" id="CWP_legend"></div>
+        </div>
+        <div class="tab-pane" id="Port_IOPS" style="width:100%;height:800px">
+           <div class="col-md-8" id="Port_IOPS_chart" style="height:100%"></div>
+           <div class="col-md-4" id="Port_IOPS_legend"></div>
+        </div>
+        <div class="tab-pane" id="Port_MBPS" style="width:100%;height:800px">
+           <div class="col-md-8" id="Port_MBPS_chart" style="height:100%"></div>
+           <div class="col-md-4" id="Port_MBPS_legend"></div>
+        </div>
+        <div class="tab-pane" id="DP_IOPS" style="width:100%;height:800px">
+           <div class="col-md-8" id="DP_IOPS_chart" style="height:100%"></div>
+           <div class="col-md-4" id="DP_IOPS_legend"></div>
+        </div>
+        <div class="tab-pane" id="DP_MBPS" style="width:100%;height:800px">
+           <div class="col-md-8" id="DP_MBPS_chart" style="height:100%"></div>
+           <div class="col-md-4" id="DP_MBPS_legend"></div>
+        </div>
+        <div class="tab-pane" id="LUN_IOPS" style="width:100%;height:800px">
+           <div class="col-md-8" id="LUN_IOPS_chart" style="height:100%"></div>
+           <div class="col-md-4" id="LUN_IOPS_legend"></div>
+        </div>
+        <div class="tab-pane" id="LUN_MBPS" style="width:100%;height:800px">
+           <div class="col-md-8" id="LUN_MBPS_chart" style="height:100%"></div>
+           <div class="col-md-4" id="LUN_MBPS_legend"></div>
+        </div>
+        <div class="tab-pane" id="LUN_TAGS" style="width:100%;height:800px">
+           <div class="col-md-8" id="LUN_TAGS_chart" style="height:100%"></div>
+           <div class="col-md-4" id="LUN_TAGS_legend"></div>
+        </div>
+        <div class="tab-pane" id="DISK_BUSY" style="width:100%;height:800px">
+           <div class="col-md-8" id="DISK_BUSY_chart" style="height:100%"></div>
+           <div class="col-md-4" id="DISK_BUSY_legend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+    
+</template>
