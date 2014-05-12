@@ -1,0 +1,6 @@
+lager-lite
+
+This is a pure-javascript project leveraging the meteor framework to deliver the tools necessary to graph PFM output for HDS modular arrays.
+
+It only considers a subset of the metrics available in the PFM output, concentrating on high-yield data.
+
