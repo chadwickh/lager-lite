@@ -1,16 +1,87 @@
-var cpu_usage = {}
-var cwp_usage = {}
-var port_iops = {}
-var port_mbps = {}
-var dp_iops = {}
-var dp_mbps = {}
-var lun_iops = {}
-var lun_mbps = {}
-var lun_tags = {}
-var disk_busy = {}
-var divs=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'DISK_BUSY']
+reportslite = new Meteor.Collection("reportslite")
+
+LAGER = {}
+LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'DISK_BUSY', 'BLOCK_SIZE']
+//for (var i=0; i< LAGER.metrics.length; i++) {
+   //console.log('Creating dict for LAGER:  '+LAGER.metrics[i])
+   //LAGER[LAGER.metrics[i]]={}
+   //LAGER[LAGER.metrics[i]]['labels']={}
+   //LAGER[LAGER.metrics[i]]['data']={}
+   //LAGER[LAGER.metrics[i]]['graph']={}
+   //LAGER[LAGER.metrics[i]]['max']={}
+   //LAGER[LAGER.metrics[i]]['average']={}
+//}
 
 if (Meteor.isClient) {
+
+  Router.map(function() {
+    this.route('home', {path: '/', template:'hello'})
+  })
+
+  function graphit (div, metric, ymax) {
+    var graph_div = div +"_chart"
+    var legend_div = div +"_legend"
+    console.log('Now charting:  '+graph_div)
+    var labels=['Time']
+    var data=[]
+    var times = []
+
+    // There's gotta be a better way - but I haven't figured it out yet
+    // Basically had an issue using the milliseconds from epoch as an arry index and had to change to
+    // building an array of sorted timestamps and then populating a 0-indexed array with them...
+    for (var time in metric['data']) {
+        times.push(time)
+    }
+
+    times.sort();
+
+    for (var key in metric['labels']) {
+       labels.push(key)
+       for (i=0; i < times.length; i++) {
+          time=times[i]
+          if (data[i] === undefined) {
+             data[i]=[]
+             data[i].push(new Date(parseInt(time)))
+          }
+          data[i].push(metric['data'][time][key])
+       }
+    }
+
+    LAGER[div]['graph'] = new Dygraph(document.getElementById(graph_div),
+                           data,
+                           {
+                             //height: 800,
+                             //width: 1024,
+                             hideOverlayOnMouseOut: false,
+                             valueRange: [0,null],
+                             stackedGraph: false,
+                             drawAxesAtZero: true,
+                             legend:"always",
+                             labels:labels,
+                             labelsDiv: legend_div,
+                             labelsSeparateLines:true,
+                             labelsShowZeroValues: false,
+                             hideOverlayOnMouseOut: false,
+                             yRangePad: 1,
+                             xRangePad: 10,
+                             xValueParser: function(x) {return (new Date(x))},
+                             axes : {
+                                 x: {
+                                     valueFormatter: Dygraph.dateString_
+                                 }
+                             }
+                             //This is for the color shading to indicate caution and danger
+                             //underlayCallback: function(canvas, area, cpu_graph) 
+                               //{ var bottom_left = cpu_graph.toDomCoords(area.x,50); 
+                                 //var top_right = cpu_graph.toDomCoords(cpu_graph.xAxisExtremes()[1],70); 
+                                 //var left = bottom_left[0]; 
+                                 //var right = top_right[0]; canvas.fillStyle = "rgba(255, 253, 208, 1.0)"; 
+                                 //canvas.fillRect(left, bottom_left[1], right-left+200, top_right[1]-bottom_left[1]);
+                               //}
+                            }
+     )
+
+  } 
 
   Template.hello.helpers({
     uploadPercent: function() {
@@ -30,7 +101,7 @@ if (Meteor.isClient) {
     arraySerial: function() {
        serial=Session.get("serial")
        if (serial === undefined) {
-          return ''
+          return 'No array'
        } else {
           return 'Information for array:  '+serial
        }
@@ -47,17 +118,32 @@ if (Meteor.isClient) {
       if (typeof console !== 'undefined')
         console.log("You pressed the button");
         console.log(moment())
-      for (var i=0; i <  divs.length; i++) {
-        console.log ("Clearing div:  "+divs[i])
-        var div=divs[i]
-        $.plot($('#'+div+'_chart'),[],{legend: {show: false}})
+      for (var i=0; i <  LAGER.metrics.length; i++) {
+        console.log ("Clearing div:  "+LAGER.metrics[i])
+        var div=LAGER.metrics[i]
         $('#'+div+'_chart').empty()
         $('#'+div+'_legend').empty()
+        console.log('Clearing dict for LAGER:  '+LAGER.metrics[i])
+        LAGER[LAGER.metrics[i]]={}
+        LAGER[LAGER.metrics[i]]['labels']={}
+        LAGER[LAGER.metrics[i]]['data']={}
+        LAGER[LAGER.metrics[i]]['graph']={}
+        LAGER[LAGER.metrics[i]]['max']=new Number()
+        LAGER[LAGER.metrics[i]]['average']={}
       }
       Session.set("filesCount",0)
       Session.set("filesLoaded",0)
       Session.set("serial",undefined)
     },
+
+    'shown.bs.tab': function (e) {
+        console.log("Showing tab: " + event.target)
+        selected_div=$(e.target).attr("href").replace('#','')
+        console.log("Resizing: " + selected_div)
+        //console.log((LAGER[selected_div]['graph']))
+        LAGER[selected_div]['graph'].resize()
+    },
+
 
     'change input':  function() {
       var filecount = 0
@@ -85,244 +171,202 @@ if (Meteor.isClient) {
         reader.readAsText(fileList[i])
 
         reader.onload = function(e) {
-          section=''
+          metric=''
           var lines = e.target.result.split('\n')
           $.each(lines, function() {
              line=this.replace(/^\s+/,'')
              if (section_re.test(line)) {
-               section=''
+               metric=''
              }
              if (start_re.test(line)) {
                sample=parseInt(line.split('.')[1])-1
                console.log('Now processing sample:  ' + sample)
              } else if (date_re.test(line)) {
                info = line.split('-')
-               start = new Date(info[0].replace(/\s+$/,'').replace('"',''))
-               end = new Date(info[1].replace(/\s+$/,'').replace('"',''))
-               //start = moment(info[0],"YYYY/MM/DD HH:mm:ss").valueOf()
-               //end = moment(info[1],"YYYY/MM/DD HH:mm:ss").valueOf()
+               //start = new Date(info[0].replace(/\s+$/,'').replace('"',''))
+               //end = new Date(info[1].replace(/\s+$/,'').replace('"',''))
+               start = moment(info[0],"YYYY/MM/DD HH:mm:ss").valueOf()
+               end = moment(info[1],"YYYY/MM/DD HH:mm:ss").valueOf()
                serial = info[2].split(':')[1]
                Session.set("serial", serial)
                console.log('Processing array:  '+serial+'  from:  '+start+' to:  '+end)
              } else if (proc_re.test(line)) {
-               section='CPU'
+               metric='CPU'
                console.log('In CPU section')
-               // Crazy jQuery stuff to go to next iteration
                return true
              } else if (cwp_re.test(line)) {
-               section='CWP'
+               metric='CWP'
                console.log('In CWP section')
                return true
              } else if (port_re.test(line)) {
-               section='Port'
+               metric='Port'
                console.log('In Port section')
                return true
              } else if (dp_re.test(line)) {
-               section='DP'
+               metric='DP'
                console.log('In DP section')
                return true
              } else if (lun_re.test(line)) {
-               section='LUN'
+               metric='LUN'
                console.log('In LUN section')
                return true
              } else if (tags_re.test(line)) {
-               section='TAG'
-               console.log('In TAG section')
+               metric='LUN_TAGS'
+               console.log('In LUN_TAGS section')
                return true
              } else if (drive_re.test(line)) {
-               section='DRIVE'
-               console.log('In DRIVE section')
+               metric='DISK_BUSY'
+               console.log('In DISK_BUSY section')
                return true
              }
-             switch (section) {
+             switch (metric) {
                case 'CPU':
                  //console.log(line)
                  proc_line=line.split(/\s+/)
                  proc=proc_line[0]+'-'+proc_line[1]
                  usage=parseFloat(proc_line[2])
-                 //console.log("CPU:  "+proc+"  Usage:  "+usage)
-                 if (cpu_usage[proc] === undefined) {
-                    cpu_usage[proc] = {}
-                    cpu_usage[proc]['label']=proc
-                    cpu_usage[proc]['data']=[]
+                 LAGER[metric]['labels'][proc]=1
+                 if (LAGER[metric]['data'][start] === undefined) {
+                     LAGER[metric]['data'][start] = {}
                  }
-                 cpu_usage[proc]['data'][sample]=[start,usage]
+                 LAGER[metric]['data'][start][proc]=usage
+                 //
+                 //if (LAGER[metric]['data']['max'] === undefined) {
+                     //console.log("In undefined section for max")
+                     //LAGER[metric]['data']['max'] = new Number()
+                 //} else if (usage > LAGER[metric]['data']['max']) {
+                     //LAGER[metric]['data']['max'] = usage
+                 //}
+                 //console.log("Setting CPU Max to: " + LAGER[metric]['data']['max'] + " for: " + proc + metric)
+                 //console.log(LAGER[metric])
                  break
                case 'CWP':
                  cwp_line=line.split(/\s+/)
                  clpr=cwp_line[0]+'-'+cwp_line[1]
                  //console.log('CLPR:  '+clpr)
                  cwp=parseFloat(cwp_line[2])
-                 if (cwp_usage[clpr] === undefined) {
-                    cwp_usage[clpr] = {}
-                    cwp_usage[clpr]['label']=clpr
-                    cwp_usage[clpr]['data']=[]
+                 LAGER[metric]['labels'][clpr]=1
+                 if (LAGER[metric]['data'][start] === undefined) {
+                     LAGER[metric]['data'][start] = {}
                  }
-                 cwp_usage[clpr]['data'][sample]=[start,cwp]
+                 LAGER[metric]['data'][start][clpr]=cwp
                  break
                case 'Port':
+                 iops_metric='Port_IOPS'
+                 mbps_metric='Port_MBPS'
                  //console.log(line)
                  port_line=line.split(/\s+/)
                  //console.log(port_line)
                  port=port_line[0]+'-'+port_line[1]
                  iops=parseFloat(port_line[2])
                  mbps=parseFloat(port_line[7])
-                 //console.log(port, iops, mbps)
-                 if (port_iops[port] === undefined) {
-                    port_iops[port] = {}
-                    port_iops[port]['label']=port
-                    port_iops[port]['data']=[]
+                 LAGER[iops_metric]['labels'][port]=1
+                 if (LAGER[iops_metric]['data'][start] === undefined) {
+                     LAGER[iops_metric]['data'][start] = {}
                  }
-                 port_iops[port]['data'][sample]=[start,iops]
-                 if (port_mbps[port] === undefined) {
-                    port_mbps[port] = {}
-                    port_mbps[port]['label']=port
-                    port_mbps[port]['data']=[]
+                 LAGER[iops_metric]['data'][start][port]=iops
+                 LAGER[mbps_metric]['labels'][port]=1
+                 if (LAGER[mbps_metric]['data'][start] === undefined) {
+                     LAGER[mbps_metric]['data'][start] = {}
                  }
-                 port_mbps[port]['data'][sample]=[start,mbps]
+                 LAGER[mbps_metric]['data'][start][port]=mbps
                  break
                case 'DP':
+                 iops_metric='DP_IOPS'
+                 mbps_metric='DP_MBPS'
                  //console.log(line)
                  dp_line=line.split(/\s+/)
                  //console.log(dp_line)
                  pool=dp_line[0]+'-'+dp_line[1]
                  iops=parseFloat(dp_line[2])
                  mbps=parseFloat(dp_line[7])
+                 LAGER[iops_metric]['labels'][pool]=1
+                 if (LAGER[iops_metric]['data'][start] === undefined) {
+                     LAGER[iops_metric]['data'][start] = {}
+                 }
+                 LAGER[iops_metric]['data'][start][pool]=iops
+                 LAGER[mbps_metric]['labels'][pool]=1
+                 if (LAGER[mbps_metric]['data'][start] === undefined) {
+                     LAGER[mbps_metric]['data'][start] = {}
+                 }
+                 LAGER[mbps_metric]['data'][start][pool]=mbps
                  //console.log(pool, iops, mbps)
-                 if (dp_iops[pool] === undefined) {
-                    dp_iops[pool] = {}
-                    dp_iops[pool]['label']=pool
-                    dp_iops[pool]['data']=[]
-                 }
-                 dp_iops[pool]['data'][sample]=[start,iops]
-                 if (dp_mbps[pool] === undefined) {
-                    dp_mbps[pool] = {}
-                    dp_mbps[pool]['label']=pool
-                    dp_mbps[pool]['data']=[]
-                 }
-                 dp_mbps[pool]['data'][sample]=[start,mbps]
                  break
                case 'LUN':
+                 iops_metric='LUN_IOPS'
+                 mbps_metric='LUN_MBPS'
+                 block_size_metric='BLOCK_SIZE'
                  //console.log(line)
                  lun_line=line.split(/\s+/)
                  //console.log(lun_line)
                  lun=lun_line[0]+'-'+lun_line[1]
                  iops=parseFloat(lun_line[2])
                  mbps=parseFloat(lun_line[7])
+                 block_size=mbps*1024/iops
+                 LAGER[iops_metric]['labels'][lun]=1
+                 if (LAGER[iops_metric]['data'][start] === undefined) {
+                     LAGER[iops_metric]['data'][start] = {}
+                 }
+                 LAGER[iops_metric]['data'][start][lun]=iops
+                 //
+                 LAGER[mbps_metric]['labels'][lun]=1
+                 if (LAGER[mbps_metric]['data'][start] === undefined) {
+                     LAGER[mbps_metric]['data'][start] = {}
+                 }
+                 LAGER[mbps_metric]['data'][start][lun]=mbps
+                 //
+                 LAGER[block_size_metric]['labels'][lun]=1
+                 if (LAGER[block_size_metric]['data'][start] === undefined) {
+                     LAGER[block_size_metric]['data'][start] = {}
+                 }
+                 LAGER[block_size_metric]['data'][start][lun]=block_size
                  //console.log(lun, iops, mbps)
-                 if (lun_iops[lun] === undefined) {
-                    lun_iops[lun] = {}
-                    lun_iops[lun]['label']=lun
-                    lun_iops[lun]['data']=[]
-                 }
-                 lun_iops[lun]['data'][sample]=[start,iops]
-                 if (lun_mbps[lun] === undefined) {
-                    lun_mbps[lun] = {}
-                    lun_mbps[lun]['label']=lun
-                    lun_mbps[lun]['data']=[]
-                 }
-                 lun_mbps[lun]['data'][sample]=[start,mbps]
                  break
-               case 'TAG':
+               case 'LUN_TAGS':
                  tag_line=line.split(/\s+/)
                  lun=tag_line[0]+'-'+tag_line[1]
                  tags=parseFloat(tag_line[2])
-                 if (lun_tags[lun] === undefined) {
-                    lun_tags[lun] = {}
-                    lun_tags[lun]['label']=lun
-                    lun_tags[lun]['data']=[]
+                 LAGER[metric]['labels'][lun]=1
+                 if (LAGER[metric]['data'][start] === undefined) {
+                     LAGER[metric]['data'][start] = {}
                  }
-                 lun_tags[lun]['data'][sample]=[start,tags]
+                 LAGER[metric]['data'][start][lun]=tags
                  break
-               case 'DRIVE':
+               case 'DISK_BUSY':
                  //console.log(line)
                  drive_line=line.split(/\s+/)
                  //console.log(drive_line)
                  drive=drive_line[0]+'-'+drive_line[1]+'-'+drive_line[2]
                  busy=parseFloat(drive_line[3])
                  //console.log(drive, busy)
-                 if (disk_busy[drive] === undefined) {
-                    disk_busy[drive] = {}
-                    disk_busy[drive]['label']=drive
-                    disk_busy[drive]['data']=[]
+                 LAGER[metric]['labels'][drive]=1
+                 if (LAGER[metric]['data'][start] === undefined) {
+                     LAGER[metric]['data'][start] = {}
                  }
-                 disk_busy[drive]['data'][sample]=[start,busy]
+                 LAGER[metric]['data'][start][drive]=busy
                  break
              }
            })
         }
 
         reader.onloadend = function(e) {
-           var cpu_data = []
-           var dygraph_cpu_data = []
-           var dygraph_cpu_labels = []
-           var cwp_data = []
-           var port_iops_data = []
-           var port_mbps_data = []
-           var dp_iops_data = []
-           var dp_mbps_data = []
-           var lun_iops_data = []
-           var lun_mbps_data = []
-           var tag_data = []
-           var disk_busy_data = []
            filecount++
            Session.set("filesLoaded",filecount)
            //console.log('Filecount:  '+filecount+'  fileList.length:  '+fileList.length)
            if (filecount >= fileList.length) {
-              for (var key in cpu_usage) {
-                 cpu_data.push(cpu_usage[key])
+              console.log('LAGER data structure')
+              console.log(LAGER)
+              for (var i=0; i <  LAGER.metrics.length; i++) {
+                  console.log ("Graphing div:  "+LAGER.metrics[i])
+                  var div=LAGER.metrics[i]
+                  console.log(LAGER[div])
+                  graphit(div, LAGER[div], 100)
+                }
               }
-              dygraph_cpu_labels.push("time")
-              for (var key in cpu_usage) {
-                 dygraph_cpu_labels.push(key)
-                 for (var time in cpu_usage[key]['data']) {
-                    if (dygraph_cpu_data[time] === undefined) {
-                       dygraph_cpu_data[time]=[]
-                       dygraph_cpu_data[time].push(cpu_usage[key]['data'][time][0])
-                    }
-                    dygraph_cpu_data[time].push(cpu_usage[key]['data'][time][1])
-                 }
-              }
-              console.log(cpu_usage)
-              console.log(dygraph_cpu_labels)
-              console.log(dygraph_cpu_data)
-              var cpu_graph= new Dygraph(document.getElementById('CPU_chart'),dygraph_cpu_data,{labels:dygraph_cpu_labels,hideOverlayOnMouseOut: false, valueRange: [0,100], labelsDiv: 'CPU_legend',drawAxesAtZero: true,labelsSeparateLines:true, yRangePad: 1,xRangePad: 10, underlayCallback: function(canvas, area, cpu_graph) { var bottom_left = cpu_graph.toDomCoords(area.x,50); var top_right = cpu_graph.toDomCoords(cpu_graph.xAxisExtremes()[1],70); var left = bottom_left[0]; var right = top_right[0]; canvas.fillStyle = "rgba(255, 253, 208, 1.0)"; canvas.fillRect(left, bottom_left[1], right-left+200, top_right[1]-bottom_left[1]);}})
-              //$.plot($('#CPU_chart'), cpu_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, tooltip: true, yaxis: {min:0, max: 100}, grid: {hoverable: true, markings: [ {yaxis: {from: 50, to:70}, color: "#fffdd1"}, {yaxis: {from: 70, to:100}, color: "#ff99ac"}]}})
-              for (var key in cwp_usage) {
-                 cwp_data.push(cwp_usage[key])
-              }
-              $.plot($('#CWP_chart'), cwp_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, tooltip: true, yaxis: {min:0, max: 100}, grid: {hoverable: true, markings: [ {yaxis: {from: 15, to:20}, color: "#fffdd1"}, {yaxis: {from: 20, to:100}, color: "#ff99ac"}]}})
-              for (var key in port_iops) {
-                 port_iops_data.push(port_iops[key])
-                 port_mbps_data.push(port_mbps[key])
-              }
-              $.plot($('#Port_IOPS_chart'), port_iops_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, grid: {hoverable: true}, tooltip: true})
-              $.plot($('#Port_MBPS_chart'), port_mbps_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, grid: {hoverable: true}, tooltip: true})
-              for (var key in dp_iops) {
-                 dp_iops_data.push(dp_iops[key])
-                 dp_mbps_data.push(dp_mbps[key])
-              }
-              $.plot($('#DP_IOPS_chart'), dp_iops_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, grid: {hoverable: true}, tooltip: true})
-              $.plot($('#DP_MBPS_chart'), dp_mbps_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, grid: {hoverable: true}, tooltip: true})
-              for (var key in lun_iops) {
-                 lun_iops_data.push(lun_iops[key])
-                 lun_mbps_data.push(lun_mbps[key])
-              }
-              $.plot($('#LUN_IOPS_chart'), lun_iops_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, grid: {hoverable: true}, tooltip: true})
-              $.plot($('#LUN_MBPS_chart'), lun_mbps_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, grid: {hoverable: true}, tooltip: true})
-              for (var key in lun_tags) {
-                 tag_data.push(lun_tags[key])
-              }
-              $.plot($('#LUN_TAGS_chart'), tag_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, selection: { mode: "xy"}, tooltip: true,  grid: {hoverable: true, markings: [ {yaxis: {from: 32}, color: "#ff99ac"}]}}) 
-              for (var key in disk_busy) {
-                 disk_busy_data.push(disk_busy[key])
-              }
-              $.plot($('#DISK_BUSY_chart'), disk_busy_data,{xaxis: {mode: "time", timeformat: "%Y/%m/%d %h:%M"}, yaxis: {min:0, max:100}, selection: { mode: "xy"}, tooltip: true,  grid: {hoverable: true, markings: [ {yaxis: {from: 50, to:70}, color: "#fffdd1"}, {yaxis: {from: 70, to:100}, color: "#ff99ac"}]}})
            }
         }
       }
-    }
-  });
+    })
 }
 
 if (Meteor.isServer) {

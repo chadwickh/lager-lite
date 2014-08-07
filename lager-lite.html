@@ -2,14 +2,34 @@
   <title>lager-lite</title>
 </head>
 
-<body>
-  {{> hello}}
-</body>
+<template name="header">
+   <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="navbar-header">
+         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+         </button>
+         <a href="/" class="navbar-brand">lager-lite</a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+         <ul class="nav navbar-nav">
+            <li><a href="/Upload">upload</a></li>
+            <li><a href="/Reports">view</a></li>
+         </ul>
+         <ul class="nav navbar-nav navbar-right">
+            <li class="nav navbar-nav">{{> loginButtons}}</li>
+            <li><a href="#" data-toggle="tooltip" title="lager-lite, Version 20140801">about</a></li>
+         </ul>
+      </div><!-- /.nav-collapse -->
+   </nav>
+</template>
+
 
 <template name="hello">
-  <h1> {{greeting}} </h1>
-
-  <br>
+  {{ > header }}
 
   <input type="file" id="input" multiple />
 
@@ -23,8 +43,9 @@
 
   {{arraySerial}}
 
-  <div class="row" style="height:800px">
-    <div class="col-md-10" style="height:800px">
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-10">
 
       <ul class="nav nav-tabs">
         <li class="active"><a href="#CPU" data-toggle="tab">CPU Utilization</a></li>
@@ -37,51 +58,56 @@
         <li><a href="#LUN_MBPS" data-toggle="tab">LUN MBPS</a></li>
         <li><a href="#LUN_TAGS" data-toggle="tab">LUN Tags (Queue Depth)</a></li>
         <li><a href="#DISK_BUSY" data-toggle="tab">Disk % Busy</a></li>
+        <li><a href="#BLOCK_SIZE" data-toggle="tab">Block Size</a></li>
       </ul>
     
       <div class="tab-content">
-        <div class="tab-pane active" id="CPU" style="width:100%;height:800px;position:absolute">
-           <div class="col-md-8" id="CPU_chart" style="height:100%"></div>
-           <div class="col-md-4" id="CPU_legend"></div>
+        <div class="tab-pane active" id="CPU">
+           <div class="col-md-8 chartdiv" style="width:70vw;height:65vh;" id="CPU_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;" id="CPU_legend"></div>
         </div>
-        <div class="tab-pane" id="CWP" style="width:100%;height:800px">
-           <div class="col-md-8" id="CWP_chart" style="height:100%"></div>
-           <div class="col-md-4" id="CWP_legend"></div>
+        <div class="tab-pane" id="CWP">
+           <div class="col-md-8 chartdiv" style="width:65vw;height:65vh;"  id="CWP_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="CWP_legend"></div>
         </div>
-        <div class="tab-pane" id="Port_IOPS" style="width:100%;height:800px">
-           <div class="col-md-8" id="Port_IOPS_chart" style="height:100%"></div>
-           <div class="col-md-4" id="Port_IOPS_legend"></div>
+        <div class="tab-pane" id="Port_IOPS">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="Port_IOPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="Port_IOPS_legend"></div>
         </div>
-        <div class="tab-pane" id="Port_MBPS" style="width:100%;height:800px">
-           <div class="col-md-8" id="Port_MBPS_chart" style="height:100%"></div>
-           <div class="col-md-4" id="Port_MBPS_legend"></div>
+        <div class="tab-pane" id="Port_MBPS">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="Port_MBPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="Port_MBPS_legend"></div>
         </div>
-        <div class="tab-pane" id="DP_IOPS" style="width:100%;height:800px">
-           <div class="col-md-8" id="DP_IOPS_chart" style="height:100%"></div>
-           <div class="col-md-4" id="DP_IOPS_legend"></div>
+        <div class="tab-pane" id="DP_IOPS">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="DP_IOPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DP_IOPS_legend"></div>
         </div>
-        <div class="tab-pane" id="DP_MBPS" style="width:100%;height:800px">
-           <div class="col-md-8" id="DP_MBPS_chart" style="height:100%"></div>
-           <div class="col-md-4" id="DP_MBPS_legend"></div>
+        <div class="tab-pane" id="DP_MBPS">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="DP_MBPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DP_MBPS_legend"></div>
         </div>
-        <div class="tab-pane" id="LUN_IOPS" style="width:100%;height:800px">
-           <div class="col-md-8" id="LUN_IOPS_chart" style="height:100%"></div>
-           <div class="col-md-4" id="LUN_IOPS_legend"></div>
+        <div class="tab-pane" id="LUN_IOPS">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="LUN_IOPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_IOPS_legend"></div>
         </div>
-        <div class="tab-pane" id="LUN_MBPS" style="width:100%;height:800px">
-           <div class="col-md-8" id="LUN_MBPS_chart" style="height:100%"></div>
-           <div class="col-md-4" id="LUN_MBPS_legend"></div>
+        <div class="tab-pane" id="LUN_MBPS">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="LUN_MBPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_MBPS_legend"></div>
         </div>
-        <div class="tab-pane" id="LUN_TAGS" style="width:100%;height:800px">
-           <div class="col-md-8" id="LUN_TAGS_chart" style="height:100%"></div>
-           <div class="col-md-4" id="LUN_TAGS_legend"></div>
+        <div class="tab-pane" id="LUN_TAGS">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="LUN_TAGS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_TAGS_legend"></div>
         </div>
-        <div class="tab-pane" id="DISK_BUSY" style="width:100%;height:800px">
-           <div class="col-md-8" id="DISK_BUSY_chart" style="height:100%"></div>
-           <div class="col-md-4" id="DISK_BUSY_legend"></div>
+        <div class="tab-pane" id="DISK_BUSY">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="DISK_BUSY_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DISK_BUSY_legend"></div>
+        </div>
+        <div class="tab-pane" id="BLOCK_SIZE">
+           <div class="col-md-8 chartdiv"  style="width:65vw;height:65vh;" id="BLOCK_SIZE_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="BLOCK_SIZE_legend"></div>
         </div>
       </div>
     </div>
   </div>
-    
+</div>    
 </template>
