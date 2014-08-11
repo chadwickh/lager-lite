@@ -2,15 +2,6 @@ reportslite = new Meteor.Collection("reportslite")
 
 LAGER = {}
 LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'DISK_BUSY', 'BLOCK_SIZE']
-//for (var i=0; i< LAGER.metrics.length; i++) {
-   //console.log('Creating dict for LAGER:  '+LAGER.metrics[i])
-   //LAGER[LAGER.metrics[i]]={}
-   //LAGER[LAGER.metrics[i]]['labels']={}
-   //LAGER[LAGER.metrics[i]]['data']={}
-   //LAGER[LAGER.metrics[i]]['graph']={}
-   //LAGER[LAGER.metrics[i]]['max']={}
-   //LAGER[LAGER.metrics[i]]['average']={}
-//}
 
 if (Meteor.isClient) {
 
@@ -21,7 +12,6 @@ if (Meteor.isClient) {
   function graphit (div, metric, ymax) {
     var graph_div = div +"_chart"
     var legend_div = div +"_legend"
-    console.log('Now charting:  '+graph_div)
     var labels=['Time']
     var data=[]
     var times = []
@@ -50,8 +40,6 @@ if (Meteor.isClient) {
     LAGER[div]['graph'] = new Dygraph(document.getElementById(graph_div),
                            data,
                            {
-                             //height: 800,
-                             //width: 1024,
                              hideOverlayOnMouseOut: false,
                              valueRange: [0,null],
                              stackedGraph: false,
@@ -114,21 +102,19 @@ if (Meteor.isClient) {
 
   Template.hello.events({
     'click input': function () {
-      // template data, if any, is available in 'this'
-      if (typeof console !== 'undefined')
-        console.log("You pressed the button");
-        console.log(moment())
+      console.log(Meteor.user())
+      if (Meteor.user() !== "undefined") {
+         LAGER['owner']=Meteor.user()
+      }
       for (var i=0; i <  LAGER.metrics.length; i++) {
-        console.log ("Clearing div:  "+LAGER.metrics[i])
         var div=LAGER.metrics[i]
         $('#'+div+'_chart').empty()
         $('#'+div+'_legend').empty()
-        console.log('Clearing dict for LAGER:  '+LAGER.metrics[i])
         LAGER[LAGER.metrics[i]]={}
         LAGER[LAGER.metrics[i]]['labels']={}
         LAGER[LAGER.metrics[i]]['data']={}
         LAGER[LAGER.metrics[i]]['graph']={}
-        LAGER[LAGER.metrics[i]]['max']=new Number()
+        LAGER[LAGER.metrics[i]]['max']={}
         LAGER[LAGER.metrics[i]]['average']={}
       }
       Session.set("filesCount",0)
@@ -137,10 +123,7 @@ if (Meteor.isClient) {
     },
 
     'shown.bs.tab': function (e) {
-        console.log("Showing tab: " + event.target)
         selected_div=$(e.target).attr("href").replace('#','')
-        console.log("Resizing: " + selected_div)
-        //console.log((LAGER[selected_div]['graph']))
         LAGER[selected_div]['graph'].resize()
     },
 
@@ -148,8 +131,6 @@ if (Meteor.isClient) {
     'change input':  function() {
       var filecount = 0
       var fileList = []
-      console.log(document.getElementById('input').files[0])
-      console.log(document.getElementById('input').files)
       fileList = document.getElementById('input').files
       Session.set("filesCount",fileList.length)
 
@@ -165,7 +146,6 @@ if (Meteor.isClient) {
       var section_re = /^[\-a-zA-Z]/
 
       for (i=0; i < fileList.length; i++) {
-        console.log('Now processing: '+fileList[i].name)
         var reader = new FileReader()
 
         reader.readAsText(fileList[i])
@@ -192,31 +172,31 @@ if (Meteor.isClient) {
                console.log('Processing array:  '+serial+'  from:  '+start+' to:  '+end)
              } else if (proc_re.test(line)) {
                metric='CPU'
-               console.log('In CPU section')
+               //console.log('In CPU section')
                return true
              } else if (cwp_re.test(line)) {
                metric='CWP'
-               console.log('In CWP section')
+               //console.log('In CWP section')
                return true
              } else if (port_re.test(line)) {
                metric='Port'
-               console.log('In Port section')
+               //console.log('In Port section')
                return true
              } else if (dp_re.test(line)) {
                metric='DP'
-               console.log('In DP section')
+               //console.log('In DP section')
                return true
              } else if (lun_re.test(line)) {
                metric='LUN'
-               console.log('In LUN section')
+               //console.log('In LUN section')
                return true
              } else if (tags_re.test(line)) {
                metric='LUN_TAGS'
-               console.log('In LUN_TAGS section')
+               //console.log('In LUN_TAGS section')
                return true
              } else if (drive_re.test(line)) {
                metric='DISK_BUSY'
-               console.log('In DISK_BUSY section')
+               //console.log('In DISK_BUSY section')
                return true
              }
              switch (metric) {
@@ -230,15 +210,13 @@ if (Meteor.isClient) {
                      LAGER[metric]['data'][start] = {}
                  }
                  LAGER[metric]['data'][start][proc]=usage
-                 //
-                 //if (LAGER[metric]['data']['max'] === undefined) {
+                 // Set per processor maximum
+                 if (LAGER[metric]['max'][proc] === undefined) {
                      //console.log("In undefined section for max")
-                     //LAGER[metric]['data']['max'] = new Number()
-                 //} else if (usage > LAGER[metric]['data']['max']) {
-                     //LAGER[metric]['data']['max'] = usage
-                 //}
-                 //console.log("Setting CPU Max to: " + LAGER[metric]['data']['max'] + " for: " + proc + metric)
-                 //console.log(LAGER[metric])
+                     LAGER[metric]['max'][proc] = usage
+                 } else if (usage > LAGER[metric]['max'][proc]) {
+                     LAGER[metric]['max'][proc] = usage
+                 }
                  break
                case 'CWP':
                  cwp_line=line.split(/\s+/)
@@ -250,6 +228,13 @@ if (Meteor.isClient) {
                      LAGER[metric]['data'][start] = {}
                  }
                  LAGER[metric]['data'][start][clpr]=cwp
+                 // Set per clpr maximum
+                 if (LAGER[metric]['max'][clpr] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[metric]['max'][clpr] = cwp
+                 } else if (usage > LAGER[metric]['max'][clpr]) {
+                     LAGER[metric]['max'][clpr] = cwp
+                 }
                  break
                case 'Port':
                  iops_metric='Port_IOPS'
@@ -260,16 +245,32 @@ if (Meteor.isClient) {
                  port=port_line[0]+'-'+port_line[1]
                  iops=parseFloat(port_line[2])
                  mbps=parseFloat(port_line[7])
+                 // Per-Port IOPS
                  LAGER[iops_metric]['labels'][port]=1
                  if (LAGER[iops_metric]['data'][start] === undefined) {
                      LAGER[iops_metric]['data'][start] = {}
                  }
                  LAGER[iops_metric]['data'][start][port]=iops
+                 // Set per-port iops maximum
+                 if (LAGER[iops_metric]['max'][port] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[iops_metric]['max'][port] = iops
+                 } else if (iops > LAGER[iops_metric]['max'][port]) {
+                     LAGER[iops_metric]['max'][port] = iops
+                 }
+                 // Per-Port MBPS
                  LAGER[mbps_metric]['labels'][port]=1
                  if (LAGER[mbps_metric]['data'][start] === undefined) {
                      LAGER[mbps_metric]['data'][start] = {}
                  }
                  LAGER[mbps_metric]['data'][start][port]=mbps
+                 // Set per-port mbps maximum
+                 if (LAGER[mbps_metric]['max'][port] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[mbps_metric]['max'][port] = mbps
+                 } else if (mbps > LAGER[mbps_metric]['max'][port]) {
+                     LAGER[mbps_metric]['max'][port] = mbps
+                 }
                  break
                case 'DP':
                  iops_metric='DP_IOPS'
@@ -280,16 +281,32 @@ if (Meteor.isClient) {
                  pool=dp_line[0]+'-'+dp_line[1]
                  iops=parseFloat(dp_line[2])
                  mbps=parseFloat(dp_line[7])
+                 // Per-DP Pool IOPS
                  LAGER[iops_metric]['labels'][pool]=1
                  if (LAGER[iops_metric]['data'][start] === undefined) {
                      LAGER[iops_metric]['data'][start] = {}
                  }
                  LAGER[iops_metric]['data'][start][pool]=iops
+                 // Set per-DP Pool mbps maximum
+                 if (LAGER[iops_metric]['max'][pool] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[iops_metric]['max'][pool] = iops
+                 } else if (iops > LAGER[iops_metric]['max'][pool]) {
+                     LAGER[iops_metric]['max'][pool] = iops
+                 }
+                 // Per-DP Pool MBPS
                  LAGER[mbps_metric]['labels'][pool]=1
                  if (LAGER[mbps_metric]['data'][start] === undefined) {
                      LAGER[mbps_metric]['data'][start] = {}
                  }
                  LAGER[mbps_metric]['data'][start][pool]=mbps
+                 // Set per-DP Pool mbps maximum
+                 if (LAGER[mbps_metric]['max'][pool] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[mbps_metric]['max'][pool] = mbps
+                 } else if (mbps > LAGER[mbps_metric]['max'][pool]) {
+                     LAGER[mbps_metric]['max'][pool] = mbps
+                 }
                  //console.log(pool, iops, mbps)
                  break
                case 'LUN':
@@ -308,18 +325,39 @@ if (Meteor.isClient) {
                      LAGER[iops_metric]['data'][start] = {}
                  }
                  LAGER[iops_metric]['data'][start][lun]=iops
+                 // Set per-LUN iops maximum
+                 if (LAGER[iops_metric]['max'][lun] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[iops_metric]['max'][lun] = iops
+                 } else if (iops > LAGER[iops_metric]['max'][lun]) {
+                     LAGER[iops_metric]['max'][lun] = iops
+                 }
                  //
                  LAGER[mbps_metric]['labels'][lun]=1
                  if (LAGER[mbps_metric]['data'][start] === undefined) {
                      LAGER[mbps_metric]['data'][start] = {}
                  }
                  LAGER[mbps_metric]['data'][start][lun]=mbps
+                 // Set per-LUN mbps maximum
+                 if (LAGER[mbps_metric]['max'][lun] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[mbps_metric]['max'][lun] = mbps
+                 } else if (mbps > LAGER[mbps_metric]['max'][lun]) {
+                     LAGER[mbps_metric]['max'][lun] = mbps
+                 }
                  //
                  LAGER[block_size_metric]['labels'][lun]=1
                  if (LAGER[block_size_metric]['data'][start] === undefined) {
                      LAGER[block_size_metric]['data'][start] = {}
                  }
                  LAGER[block_size_metric]['data'][start][lun]=block_size
+                 // Set per-LUN block size maximum
+                 if (LAGER[block_size_metric]['max'][lun] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[block_size_metric]['max'][lun] = block_size
+                 } else if (mbps > LAGER[block_size_metric]['max'][lun]) {
+                     LAGER[block_size_metric]['max'][lun] = block_size
+                 }
                  //console.log(lun, iops, mbps)
                  break
                case 'LUN_TAGS':
@@ -331,6 +369,14 @@ if (Meteor.isClient) {
                      LAGER[metric]['data'][start] = {}
                  }
                  LAGER[metric]['data'][start][lun]=tags
+                 // Set per-LUN tag maximum
+                 if (LAGER[metric]['max'][lun] === undefined) {
+                     //console.log("In undefined section for Tags for lun" + lun + " with tags: " + tags)
+                     LAGER[metric]['max'][lun] = tags
+                 } else if (tags > LAGER[metric]['max'][lun]) {
+                     //console.log("Setting max tags to: " + tags + " for LUN:  "+lun)
+                     LAGER[metric]['max'][lun] = tags
+                 }
                  break
                case 'DISK_BUSY':
                  //console.log(line)
@@ -344,6 +390,13 @@ if (Meteor.isClient) {
                      LAGER[metric]['data'][start] = {}
                  }
                  LAGER[metric]['data'][start][drive]=busy
+                 // Set per-LUN tag maximum
+                 if (LAGER[metric]['max'][drive] === undefined) {
+                     //console.log("In undefined section for max")
+                     LAGER[metric]['max'][drive] = busy
+                 } else if (mbps > LAGER[metric]['max'][drive]) {
+                     LAGER[metric]['max'][drive] = busy
+                 }
                  break
              }
            })
@@ -359,7 +412,7 @@ if (Meteor.isClient) {
               for (var i=0; i <  LAGER.metrics.length; i++) {
                   console.log ("Graphing div:  "+LAGER.metrics[i])
                   var div=LAGER.metrics[i]
-                  console.log(LAGER[div])
+                  //console.log(LAGER[div])
                   graphit(div, LAGER[div], 100)
                 }
               }
