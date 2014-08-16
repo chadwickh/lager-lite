@@ -16,8 +16,10 @@
 
       <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
          <ul class="nav navbar-nav">
-            <li><a href="/Upload">upload</a></li>
-            <li><a href="/Reports">view</a></li>
+            {{#if currentUser}}
+               <li><a href="/save">save</a></li>
+               <li><a href="/view">view</a></li>
+            {{/if}}
          </ul>
          <ul class="nav navbar-nav navbar-right">
             <li class="nav navbar-nav">{{> loginButtons}}</li>
@@ -62,6 +64,9 @@
         <li><a href="#LUN_IOPS" data-toggle="tab">LUN IOPS</a></li>
         <li><a href="#LUN_MBPS" data-toggle="tab">LUN MBPS</a></li>
         <li><a href="#LUN_TAGS" data-toggle="tab">LUN Tags (Queue Depth)</a></li>
+        <li><a href="#LUN_RESPONSE" data-toggle="tab">LUN Response (usecs)</a></li>
+        <li><a href="#LUN_READ_RESPONSE" data-toggle="tab">LUN Read Response (usecs)</a></li>
+        <li><a href="#LUN_WRITE_RESPONSE" data-toggle="tab">LUN Write Response (usecs)</a></li>
         <li><a href="#DISK_BUSY" data-toggle="tab">Disk % Busy</a></li>
         <li><a href="#BLOCK_SIZE" data-toggle="tab">Block Size</a></li>
       </ul>
@@ -102,6 +107,18 @@
         <div class="tab-pane" id="LUN_TAGS">
            <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_TAGS_chart"></div>
            <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_TAGS_legend"></div>
+        </div>
+        <div class="tab-pane" id="LUN_RESPONSE">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_RESPONSE_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_RESPONSE_legend"></div>
+        </div>
+        <div class="tab-pane" id="LUN_READ_RESPONSE">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_READ_RESPONSE_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_READ_RESPONSE_legend"></div>
+        </div>
+        <div class="tab-pane" id="LUN_WRITE_RESPONSE">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_WRITE_RESPONSE_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_WRITE_RESPONSE_legend"></div>
         </div>
         <div class="tab-pane" id="DISK_BUSY">
            <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="DISK_BUSY_chart"></div>

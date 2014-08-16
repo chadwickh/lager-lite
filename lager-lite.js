@@ -1,7 +1,7 @@
 reportslite = new Meteor.Collection("reportslite")
 
 LAGER = {}
-LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'DISK_BUSY', 'BLOCK_SIZE']
+LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'LUN_RESPONSE', 'LUN_READ_RESPONSE', 'LUN_WRITE_RESPONSE', 'DISK_BUSY', 'BLOCK_SIZE']
 
 if (Meteor.isClient) {
 
@@ -123,6 +123,7 @@ if (Meteor.isClient) {
         LAGER[LAGER.metrics[i]]['max']={}
         LAGER[LAGER.metrics[i]]['sum']={}
         LAGER[LAGER.metrics[i]]['average']={}
+        LAGER[LAGER.metrics[i]]['count']={}
       }
       Session.set("filesCount",0)
       Session.set("filesLoaded",0)
@@ -152,6 +153,12 @@ if (Meteor.isClient) {
       var tags_re = /^CTL    LU   Tag Count/
       var drive_re = /^CTL Unit HDU Operating Rate\(%\)/
       var section_re = /^[\-a-zA-Z]/
+      var read_count2_re = /^CTL    LU   Read CMD Hit Count2/
+      var write_count2_re = /^CTL    LU  Write CMD Hit Count2/
+      var read_miss_re = /^CTL    LU   Read CMD Miss Count/
+      var write_miss_re = /^CTL    LU  Write CMD Miss Count/
+      var read_job_re = /^CTL    LU    Read CMD Job Count/
+      var write_job_re = /^CTL    LU   Write CMD Job Count/
 
       for (i=0; i < fileList.length; i++) {
         var reader = new FileReader()
@@ -227,6 +234,18 @@ if (Meteor.isClient) {
                data_fields[metric]=[3]
                console.log('In DISK_BUSY section')
                return true
+             } else if ((read_count2_re.test(line)) || (read_miss_re.test(line)) || (read_job_re.test(line))) {
+               metric='LUN_READ_RESPONSE'
+               series_fields=[0, 1]
+               count_field=2
+               response_field=3
+               return true
+             } else if ((write_count2_re.test(line)) || (write_miss_re.test(line))|| (write_job_re.test(line))) {
+               metric='LUN_WRITE_RESPONSE'
+               series_fields=[0, 1]
+               count_field=2
+               response_field=3
+               return true
              }
              switch (metric) {
                case 'CPU':
@@ -265,6 +284,38 @@ if (Meteor.isClient) {
                     }
                  }
                  break
+               case 'LUN_READ_RESPONSE':
+               case 'LUN_WRITE_RESPONSE':
+                 console.log(metric)
+                 temp_line=line.split(/\s+/)
+                 series=temp_line[series_fields[0]]
+                 //console.log("Setting series to:  " + series)
+                 if (series_fields.length > 0) {
+                    for (i=1; i < series_fields.length; i++) {
+                       series=series+"-"+temp_line[series_fields[i]]
+                       //console.log("Setting series to:  " + series)
+                    }
+                 }
+                 if(LAGER[metric]['count'][start] === undefined) {
+                    LAGER[metric]['count'][start] = {}
+                 }
+                 if (LAGER[metric]['count'][start][series] === undefined) {
+                    LAGER[metric]['count'][start][series] = parseFloat(temp_line[count_field])
+                 } else {
+                   LAGER[metric]['count'][start][series] += parseFloat(temp_line[count_field])
+                 }
+                 console.log(series + ' count: ' + LAGER[metric]['count'][start][series])
+
+
+                 if(LAGER[metric]['sum'][start] === undefined) {
+                   LAGER[metric]['sum'][start] = {}
+                 }
+                 if (LAGER[metric]['sum'][start][series] === undefined) {
+                   LAGER[metric]['sum'][start][series] = parseFloat(temp_line[count_field]) * parseFloat(temp_line[response_field])
+                 } else {
+                   LAGER[metric]['sum'][start][series] += parseFloat(temp_line[count_field]) * parseFloat(temp_line[response_field])
+                 }
+                 console.log(series + ' sum: ' + LAGER[metric]['sum'][start][series])
              }
            })
         }
@@ -278,11 +329,31 @@ if (Meteor.isClient) {
                  if (LAGER['LUN_IOPS']['data'].hasOwnProperty(time)) {
                     for (var lun in LAGER['LUN_IOPS']['data'][time]) {
                        if (LAGER['LUN_IOPS']['data'][time].hasOwnProperty(lun)) {
+                          // Because the pfm files are regular we can use the same indices for multiple calculations
                           LAGER['BLOCK_SIZE']['labels'][lun]=1
                           if (LAGER['BLOCK_SIZE']['data'][time] === undefined) {
                              LAGER['BLOCK_SIZE']['data'][time] = {}
                           }
                           LAGER['BLOCK_SIZE']['data'][time][lun]=(LAGER['LUN_MBPS']['data'][time][lun]*1024)/LAGER['LUN_IOPS']['data'][time][lun]
+                          // Read response
+                          LAGER['LUN_READ_RESPONSE']['labels'][lun]=1
+                          if (LAGER['LUN_READ_RESPONSE']['data'][time] === undefined) {
+                             LAGER['LUN_READ_RESPONSE']['data'][time] = {}
+                          }
+                          LAGER['LUN_READ_RESPONSE']['data'][time][lun] = LAGER['LUN_READ_RESPONSE']['sum'][time][lun] / LAGER['LUN_READ_RESPONSE']['count'][time][lun]
+                          
+                          // Write response
+                          LAGER['LUN_WRITE_RESPONSE']['labels'][lun]=1
+                          if (LAGER['LUN_WRITE_RESPONSE']['data'][time] === undefined) {
+                             LAGER['LUN_WRITE_RESPONSE']['data'][time] = {}
+                          }
+                          LAGER['LUN_WRITE_RESPONSE']['data'][time][lun] = LAGER['LUN_WRITE_RESPONSE']['sum'][time][lun] / LAGER['LUN_WRITE_RESPONSE']['count'][time][lun]
+                          // Total response
+                          LAGER['LUN_RESPONSE']['labels'][lun]=1
+                          if (LAGER['LUN_RESPONSE']['data'][time] === undefined) {
+                             LAGER['LUN_RESPONSE']['data'][time] = {}
+                          }
+                          LAGER['LUN_RESPONSE']['data'][time][lun] = (LAGER['LUN_WRITE_RESPONSE']['sum'][time][lun] + LAGER['LUN_READ_RESPONSE']['sum'][time][lun]) / (LAGER['LUN_WRITE_RESPONSE']['count'][time][lun] +  LAGER['LUN_READ_RESPONSE']['count'][time][lun])
                        } 
                     }
                  }
