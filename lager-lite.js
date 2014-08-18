@@ -1,9 +1,12 @@
-reportslite = new Meteor.Collection("reportslite")
+Reportslite = new Meteor.Collection("reportslite")
 
 LAGER = {}
+GRAPHS= {}
 LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'LUN_RESPONSE', 'LUN_READ_RESPONSE', 'LUN_WRITE_RESPONSE', 'DISK_BUSY', 'BLOCK_SIZE']
 
 if (Meteor.isClient) {
+
+  Meteor.subscribe("reportslite")
 
   Router.map(function() {
     this.route('home', {path: '/', template:'hello'})
@@ -15,8 +18,8 @@ if (Meteor.isClient) {
     var labels=['Time']
     var data=[]
     var times = []
-    console.log('In graphit function')
-    console.log(metric)
+    //console.log('In graphit function')
+    //console.log(metric)
 
     // There's gotta be a better way - but I haven't figured it out yet
     // Basically had an issue using the milliseconds from epoch as an arry index and had to change to
@@ -26,11 +29,11 @@ if (Meteor.isClient) {
     }
 
     times.sort()
-    console.log(times)
+    //console.log(times)
 
     for (var key in metric['labels']) {
        labels.push(key)
-       console.log(key)
+       //console.log(key)
        for (i=0; i < times.length; i++) {
           time=times[i]
           if (data[i] === undefined) {
@@ -41,9 +44,9 @@ if (Meteor.isClient) {
        }
     }
 
-    console.log(data)
+    //console.log(data)
 
-    LAGER[div]['graph'] = new Dygraph(document.getElementById(graph_div),
+    GRAPHS[div]['graph'] = new Dygraph(document.getElementById(graph_div),
                            data,
                            {
                              hideOverlayOnMouseOut: false,
@@ -107,8 +110,8 @@ if (Meteor.isClient) {
   };
 
   Template.hello.events({
-    'click input': function () {
-      console.log(Meteor.user())
+    'click .loadFiles': function () {
+      //console.log(Meteor.user())
       if (Meteor.user() !== "undefined") {
          LAGER['owner']=Meteor.user()
       }
@@ -119,28 +122,50 @@ if (Meteor.isClient) {
         LAGER[LAGER.metrics[i]]={}
         LAGER[LAGER.metrics[i]]['labels']={}
         LAGER[LAGER.metrics[i]]['data']={}
-        LAGER[LAGER.metrics[i]]['graph']={}
         LAGER[LAGER.metrics[i]]['max']={}
         LAGER[LAGER.metrics[i]]['sum']={}
         LAGER[LAGER.metrics[i]]['average']={}
         LAGER[LAGER.metrics[i]]['count']={}
+        GRAPHS[LAGER.metrics[i]]={}
+        GRAPHS[LAGER.metrics[i]]['graph']={}
       }
       Session.set("filesCount",0)
       Session.set("filesLoaded",0)
       Session.set("serial",undefined)
     },
 
+    'click .saveButton' : function() {
+      console.log("In insert section")
+      // Inserts kept giving me a circular reference error before I added this
+      // And this would keep them from resizing on selection so we added GRAPHS
+      // data structure...
+      //for (var i=0; i <  LAGER.metrics.length; i++) {
+        //LAGER[LAGER.metrics[i]]['graph']={}
+      //}
+      description=$('#saveDescription').val()
+      console.log(description)
+      LAGER['description']=description
+      console.log(LAGER)
+      Reportslite.insert(LAGER, function(err) {
+        console.log(err)
+      })
+      //Reportslite.insert({'foobie': 'bletch'})
+    },
+
     'shown.bs.tab': function (e) {
         selected_div=$(e.target).attr("href").replace('#','')
-        LAGER[selected_div]['graph'].resize()
+        GRAPHS[selected_div]['graph'].resize()
     },
 
 
-    'change input':  function() {
+    // Changed this from a change event to try and speed things up
+    // as well as deal with the case where it's the same filelist repeatedly
+    'click .submitFiles':  function() {
+      event.preventDefault()
       var filecount = 0
       var fileList = []
       var data_fields = {}
-      fileList = document.getElementById('input').files
+      fileList = document.getElementById('loadFiles').files
       Session.set("filesCount",fileList.length)
 
       var start_re = /^No\./
@@ -175,16 +200,26 @@ if (Meteor.isClient) {
              }
              if (start_re.test(line)) {
                sample=parseInt(line.split('.')[1])-1
-               console.log('Now processing sample:  ' + sample)
+               //console.log('Now processing sample:  ' + sample)
              } else if (date_re.test(line)) {
                info = line.split('-')
                //start = new Date(info[0].replace(/\s+$/,'').replace('"',''))
                //end = new Date(info[1].replace(/\s+$/,'').replace('"',''))
                start = moment(info[0],"YYYY/MM/DD HH:mm:ss").valueOf()
+               if (LAGER['start'] === undefined) {
+                 LAGER['start'] = start
+               } else if (start < LAGER['start']) {
+                 LAGER['start'] = start
+               }
                end = moment(info[1],"YYYY/MM/DD HH:mm:ss").valueOf()
+               if (LAGER['end'] === undefined) {
+                 LAGER['end'] = end
+               } else if (start < LAGER['end']) {
+                 LAGER['end'] = end
+               }
                serial = info[2].split(':')[1]
                Session.set("serial", serial)
-               console.log('Processing array:  '+serial+'  from:  '+start+' to:  '+end)
+               //console.log('Processing array:  '+serial+'  from:  '+start+' to:  '+end)
              } else if (proc_re.test(line)) {
                metric='CPU'
                // series_fields is an array of fields to concatenate with dashes to build the 
@@ -193,46 +228,46 @@ if (Meteor.isClient) {
                // data_fields is a hash with the key being the metric name and the value
                // the field from the line to use
                data_fields[metric]=[2]
-               console.log('In CPU section')
+               //console.log('In CPU section')
                return true
              } else if (cwp_re.test(line)) {
                metric='CWP'
                series_fields=[0,1]
                data_fields[metric]=[2]
-               console.log('In CWP section')
+               //console.log('In CWP section')
                return true
              } else if (port_re.test(line)) {
                metric='Port'
                series_fields=[0,1]
                data_fields[metric+'_IOPS']=[2]
                data_fields[metric+'_MBPS']=[7]
-               console.log('In Port section')
+               //console.log('In Port section')
                return true
              } else if (dp_re.test(line)) {
                metric='DP'
                series_fields=[0,1]
                data_fields[metric+'_IOPS']=[2]
                data_fields[metric+'_MBPS']=[7]
-               console.log('In DP section')
+               //console.log('In DP section')
                return true
              } else if (lun_re.test(line)) {
                metric='LUN'
                series_fields=[0,1]
                data_fields[metric+'_IOPS']=[2]
                data_fields[metric+'_MBPS']=[7]
-               console.log('In LUN section')
+               //console.log('In LUN section')
                return true
              } else if (tags_re.test(line)) {
                metric='LUN_TAGS'
                series_fields=[0,1]
                data_fields[metric]=[2]
-               console.log('In LUN_TAGS section')
+               //console.log('In LUN_TAGS section')
                return true
              } else if (drive_re.test(line)) {
                metric='DISK_BUSY'
                series_fields=[0,1,2]
                data_fields[metric]=[3]
-               console.log('In DISK_BUSY section')
+               //console.log('In DISK_BUSY section')
                return true
              } else if ((read_count2_re.test(line)) || (read_miss_re.test(line)) || (read_job_re.test(line))) {
                metric='LUN_READ_RESPONSE'
@@ -286,7 +321,7 @@ if (Meteor.isClient) {
                  break
                case 'LUN_READ_RESPONSE':
                case 'LUN_WRITE_RESPONSE':
-                 console.log(metric)
+                 //console.log(metric)
                  temp_line=line.split(/\s+/)
                  series=temp_line[series_fields[0]]
                  //console.log("Setting series to:  " + series)
@@ -304,7 +339,7 @@ if (Meteor.isClient) {
                  } else {
                    LAGER[metric]['count'][start][series] += parseFloat(temp_line[count_field])
                  }
-                 console.log(series + ' count: ' + LAGER[metric]['count'][start][series])
+                 //console.log(series + ' count: ' + LAGER[metric]['count'][start][series])
 
 
                  if(LAGER[metric]['sum'][start] === undefined) {
@@ -315,7 +350,7 @@ if (Meteor.isClient) {
                  } else {
                    LAGER[metric]['sum'][start][series] += parseFloat(temp_line[count_field]) * parseFloat(temp_line[response_field])
                  }
-                 console.log(series + ' sum: ' + LAGER[metric]['sum'][start][series])
+                 //console.log(series + ' sum: ' + LAGER[metric]['sum'][start][series])
              }
            })
         }
@@ -323,7 +358,7 @@ if (Meteor.isClient) {
         reader.onloadend = function(e) {
            filecount++
            Session.set("filesLoaded",filecount)
-           console.log('Filecount:  '+filecount+'  fileList.length:  '+fileList.length)
+           //console.log('Filecount:  '+filecount+'  fileList.length:  '+fileList.length)
            if (filecount >= fileList.length) {
               for (var time in LAGER['LUN_IOPS']['data']) {
                  if (LAGER['LUN_IOPS']['data'].hasOwnProperty(time)) {
@@ -377,4 +412,14 @@ if (Meteor.isServer) {
   Meteor.startup(function () {
     // code to run on server at startup
   });
+
+  Meteor.publish("reportslite",  function () {
+    return Reportslite.find({})
+  })
+
+  Reportslite.allow({
+    insert: function(userId, doc) {
+      return true
+    } 
+  })
 }

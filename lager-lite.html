@@ -17,7 +17,7 @@
       <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
          <ul class="nav navbar-nav">
             {{#if currentUser}}
-               <li><a href="/save">save</a></li>
+               <li><a href="#" data-toggle="modal" data-target="#saveModal">save</a></li>
                <li><a href="/view">view</a></li>
             {{/if}}
          </ul>
@@ -27,6 +27,27 @@
          </ul>
       </div><!-- /.nav-collapse -->
    </nav>
+               <!-- Modal -->
+               <div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModalLabel" aria-hidden="true">
+                  <div class="modal-dialog">
+                     <div class="modal-content">
+                        <div class="modal-header">
+                           <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                           <h4 class="modal-title" id="saveModalLabel">Save a report</h4>
+                        </div>
+                        <div class="modal-body">
+                           <form>
+                              Please enter a brief description for this report: <input type="text" id="saveDescription">
+                           </form>
+                        </div>
+                        <div class="modal-footer">
+                           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                           <button type="button" class="btn btn-primary saveButton" data-dismiss="modal">Save</button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
 </template>
 
 
@@ -38,7 +59,18 @@
      .many .dygraph-legend > span.highlight { display: inline; }
   </style>
 
-  <input type="file" id="input" multiple />
+  <form>
+    <div class="btn-toolbar" role="toolbar">
+       <div class="btn-group">
+          <span class="btn btn-default btn-file">
+             <input type="file" id="loadFiles" class="loadFiles" multiple data-role="button" data-inline="true"/>
+          </span>
+       </div>
+       <div class="btn-group">
+          <input type="submit" class="btn-success btn btn-default submitFiles" data-role="button" data-inline="true" data-theme="b"/>
+       </div>
+      </div>
+  </form>
 
   <div class="progress progress-striped">
     <div class="progress-bar progress-bar-info" role="progressbar" style="width: {{uploadPercent}}%">
