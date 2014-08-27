@@ -23,7 +23,7 @@
          </ul>
          <ul class="nav navbar-nav navbar-right">
             <li class="nav navbar-nav">{{> loginButtons}}</li>
-            <li><a href="#" data-toggle="tooltip" title="lager-lite, Version 20140801">about</a></li>
+            <li><a href="#" data-toggle="tooltip" title="lager-lite, Version 20140820">about</a></li>
          </ul>
       </div><!-- /.nav-collapse -->
    </nav>
@@ -81,6 +81,41 @@
   </div>
 
   {{arraySerial}}
+
+  {{ > charts }}
+</template>
+
+<template name="view">
+
+   {{ > header }}
+
+<table id="summary_table">
+<tr><td align="center">Serial</td><td align="center">Start</td><td align="center">End</td><td align="center">Description</td><td align="center">Graphs</td></tr>
+
+   {{#each summary}}
+<tr>
+     <td>{{ serial }}</td>
+     <td>{{ start }}</td>
+     <td>{{ end }}</td>
+     <td>{{ description }}</td>
+     <td align="center"> <a href="/display/{{reportsId}}"><i class="glyphicon glyphicon-dashboard"></i></a> </td>
+
+</tr>
+   {{/each}}
+</table>
+
+</template>
+
+<template name="display">
+
+  {{ > header }}
+
+  {{ > charts }}
+
+
+</template>
+
+<template name="charts">
 
 <div class="container-fluid">
   <div class="row">
@@ -165,3 +200,4 @@
   </div>
 </div>    
 </template>
+

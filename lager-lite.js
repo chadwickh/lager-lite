@@ -1,4 +1,12 @@
 Reportslite = new Meteor.Collection("reportslite")
+Summary = new Meteor.Collection("summary")
+
+Meteor.methods({
+  returnReport: function(reportsId,owner) {
+    return Reportslite.findOne({_id:reportsId,owner:owner})
+  }
+})
+
 
 LAGER = {}
 GRAPHS= {}
@@ -6,10 +14,13 @@ LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LU
 
 if (Meteor.isClient) {
 
-  Meteor.subscribe("reportslite")
+  Meteor.subscribe("summary")
 
   Router.map(function() {
-    this.route('home', {path: '/', template:'hello'})
+    this.route('home', {path: '/', template:'hello'});
+    //this.route('view', {path: '/view', template:'view', data: function() {console.log(Meteor.userId()); summary: Summary.find({owner:Meteor.userId()})}})
+    this.route('view', {path: '/view', template:'view', data: {summary: Summary.find({owner:Meteor.userId()})}});
+    this.route('display', {path: '/display/:reportsId', template: 'display', data: function() {Session.set('reportsId', this.params.reportsId)}});
   })
 
   function graphit (div, metric, ymax) {
@@ -105,6 +116,39 @@ if (Meteor.isClient) {
     }
   })
 
+  Template.display.events({
+    'shown.bs.tab': function (e) {
+        selected_div=$(e.target).attr("href").replace('#','')
+        GRAPHS[selected_div]['graph'].resize()
+    }
+  })
+
+  Template.display.rendered=function() {
+    reportsId=Session.get("reportsId")
+    console.log(reportsId)
+    Meteor.call("returnReport", reportsId, Meteor.userId(), function(error, result) {
+      if(error) {
+        console.log(error.reason)
+      } else {
+        LAGER=result
+        if (result.metrics.length > 0) {
+          for (var i=0; i <  result.metrics.length; i++) {
+            GRAPHS[result.metrics[i]]={} 
+            GRAPHS[result.metrics[i]]['graph']={} 
+            console.log ("Graphing div:  "+result.metrics[i])
+            var div=result.metrics[i]
+            //console.log(LAGER[div])
+            graphit(div, result[div], 100)
+          }
+        }
+      }
+    })
+    //LAGER=returnReport(reportsId)
+    //LAGER=report(reportsId)
+    console.log(LAGER)
+  }
+
+
   Template.hello.greeting = function () {
     return "Welcome to lager-lite.";
   };
@@ -113,7 +157,8 @@ if (Meteor.isClient) {
     'click .loadFiles': function () {
       //console.log(Meteor.user())
       if (Meteor.user() !== "undefined") {
-         LAGER['owner']=Meteor.user()
+         LAGER['owner']=Meteor.userId()
+         console.log(LAGER['owner'])
       }
       for (var i=0; i <  LAGER.metrics.length; i++) {
         var div=LAGER.metrics[i]
@@ -145,9 +190,18 @@ if (Meteor.isClient) {
       description=$('#saveDescription').val()
       console.log(description)
       LAGER['description']=description
-      console.log(LAGER)
-      Reportslite.insert(LAGER, function(err) {
-        console.log(err)
+      console.log(moment(LAGER['start']).format("MM/DD/YYYY HH:mm"))
+      console.log(moment(LAGER['end']).format("MM/DD/YYYY HH:mm"))
+      //console.log(LAGER)
+      reportsId=Reportslite.insert(LAGER, function(err, docId) {
+        if(err) {console.log(err)}
+        else {
+          return docId
+        }
+      })
+      console.log(reportsId)
+      Summary.insert({'serial':Session.get('serial'), 'start':moment(LAGER['start']).format("MM/DD/YYYY HH:mm"), 'end':moment(LAGER['end']).format("MM/DD/YYYY HH:mm"), 'description':LAGER['description'], 'reportsId':reportsId, 'owner':LAGER['owner']}, function(err) {
+        if(err) {console.log(err)}
       })
       //Reportslite.insert({'foobie': 'bletch'})
     },
@@ -212,12 +266,15 @@ if (Meteor.isClient) {
                  LAGER['start'] = start
                }
                end = moment(info[1],"YYYY/MM/DD HH:mm:ss").valueOf()
+               // we track the largest start # because we're using the start for the timestamp
+               // and we'll never have the last number in the dataset
                if (LAGER['end'] === undefined) {
-                 LAGER['end'] = end
-               } else if (start < LAGER['end']) {
-                 LAGER['end'] = end
+                 LAGER['end'] = start
+               } else if (start > LAGER['end']) {
+                 LAGER['end'] = start
                }
                serial = info[2].split(':')[1]
+               LAGER['serial']=serial
                Session.set("serial", serial)
                //console.log('Processing array:  '+serial+'  from:  '+start+' to:  '+end)
              } else if (proc_re.test(line)) {
@@ -413,8 +470,18 @@ if (Meteor.isServer) {
     // code to run on server at startup
   });
 
+  Meteor.publish("summary",  function () {
+    return Summary.find({})
+  })
+  
   Meteor.publish("reportslite",  function () {
     return Reportslite.find({})
+  })
+
+  Summary.allow({
+    insert: function(userId, doc) {
+      return true
+    } 
   })
 
   Reportslite.allow({
@@ -422,4 +489,5 @@ if (Meteor.isServer) {
       return true
     } 
   })
+
 }
