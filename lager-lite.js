@@ -23,6 +23,26 @@ if (Meteor.isClient) {
     this.route('display', {path: '/display/:reportsId', template: 'display', data: function() {Session.set('reportsId', this.params.reportsId)}});
   })
 
+stackchange = function(el) {
+    split_div=$(el).attr('id').split('_')
+    console.log(split_div)
+    selected_div=split_div.slice(0,2).join('_')
+    console.log(selected_div)
+    if (el.checked) {
+      console.log("Checked")
+      console.log(el)
+      GRAPHS[selected_div]['graph'].updateOptions({
+        stackedGraph: true
+      })
+    } else {
+      console.log("Not Checked")
+      console.log(el)
+      GRAPHS[selected_div]['graph'].updateOptions({
+        stackedGraph: false
+      })
+    }
+  }
+
   function graphit (div, metric, ymax) {
     var graph_div = div +"_chart"
     var legend_div = div +"_legend"
