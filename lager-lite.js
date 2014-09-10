@@ -194,7 +194,12 @@ stackchange = function(el) {
         GRAPHS[LAGER.metrics[i]]={}
         GRAPHS[LAGER.metrics[i]]['graph']={}
       }
-      Session.set("filesCount",0)
+      // Uncheck all checkboxes
+      $('.checkbox1').each(function() {
+        this.checked = false;
+      })
+      // Set filesCount to 1 even though we have 0 files (avoid divide by 0 error)
+      Session.set("filesCount",1)
       Session.set("filesLoaded",0)
       Session.set("serial",undefined)
     },
