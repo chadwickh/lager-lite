@@ -75,7 +75,9 @@ stackchange = function(el) {
        }
     }
 
-    //console.log(data)
+    console.log("Data for Div")
+    console.log(div)
+    console.log(data)
 
     GRAPHS[div]['graph'] = new Dygraph(document.getElementById(graph_div),
                            data,
@@ -89,6 +91,7 @@ stackchange = function(el) {
                              labelsDiv: legend_div,
                              labelsSeparateLines:true,
                              labelsShowZeroValues: false,
+                             labelsSortByValue: true,
                              hideOverlayOnMouseOut: false,
                              yRangePad: 1,
                              xRangePad: 10,
