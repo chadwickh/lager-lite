@@ -23,7 +23,7 @@
          </ul>
          <ul class="nav navbar-nav navbar-right">
             <li class="nav navbar-nav">{{> loginButtons}}</li>
-            <li><a href="#" data-toggle="tooltip" title="lager-lite, Version 20140820">about</a></li>
+            <li><a href="#" data-toggle="tooltip" title="lager-lite, Version 20141103">about</a></li>
          </ul>
       </div><!-- /.nav-collapse -->
    </nav>
@@ -136,6 +136,8 @@
         <li><a href="#LUN_WRITE_RESPONSE" data-toggle="tab">LUN Write Response (usecs)</a></li>
         <li><a href="#DISK_BUSY" data-toggle="tab">Disk % Busy</a></li>
         <li><a href="#BLOCK_SIZE" data-toggle="tab">Block Size</a></li>
+        <li><a href="#READ_PERCENT" data-toggle="tab">Array % Read</a></li>
+        <li><a href="#BACK_END" data-toggle="tab">Back End IOPs vs Front End IOPs</a></li>
       </ul>
     
       <div class="tab-content">
@@ -214,6 +216,14 @@
         <div class="tab-pane" id="BLOCK_SIZE">
            <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="BLOCK_SIZE_chart"></div>
            <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="BLOCK_SIZE_legend"></div>
+        </div>
+        <div class="tab-pane" id="READ_PERCENT">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="READ_PERCENT_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="READ_PERCENT_legend"></div>
+        </div>
+        <div class="tab-pane" id="BACK_END">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="BACK_END_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="BACK_END_legend"></div>
         </div>
       </div>
     </div>

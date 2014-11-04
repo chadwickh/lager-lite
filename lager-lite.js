@@ -10,7 +10,19 @@ Meteor.methods({
 
 LAGER = {}
 GRAPHS= {}
-LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'LUN_RESPONSE', 'LUN_READ_RESPONSE', 'LUN_WRITE_RESPONSE', 'DISK_BUSY', 'BLOCK_SIZE']
+LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'LUN_RESPONSE', 'LUN_READ_RESPONSE', 'LUN_WRITE_RESPONSE', 'DISK_BUSY', 'BLOCK_SIZE', 'READ_PERCENT', 'BACK_END', 'READ_IOPS', 'FRONT_IOPS', 'BACKEND_IOPS']
+  for (var i=0; i <  LAGER.metrics.length; i++) {
+    var div=LAGER.metrics[i]
+    LAGER[LAGER.metrics[i]]={}
+    LAGER[LAGER.metrics[i]]['labels']={}
+    LAGER[LAGER.metrics[i]]['data']={}
+    LAGER[LAGER.metrics[i]]['max']={}
+    LAGER[LAGER.metrics[i]]['sum']={}
+    LAGER[LAGER.metrics[i]]['average']={}
+    LAGER[LAGER.metrics[i]]['count']={}
+    GRAPHS[LAGER.metrics[i]]={}
+    GRAPHS[LAGER.metrics[i]]['graph']={}
+  }
 
 if (Meteor.isClient) {
 
@@ -29,14 +41,14 @@ stackchange = function(el) {
     selected_div=split_div.slice(0,2).join('_')
     console.log(selected_div)
     if (el.checked) {
-      console.log("Checked")
-      console.log(el)
+      //console.log("Checked")
+      //console.log(el)
       GRAPHS[selected_div]['graph'].updateOptions({
         stackedGraph: true
       })
     } else {
-      console.log("Not Checked")
-      console.log(el)
+      //console.log("Not Checked")
+      //console.log(el)
       GRAPHS[selected_div]['graph'].updateOptions({
         stackedGraph: false
       })
@@ -75,9 +87,9 @@ stackchange = function(el) {
        }
     }
 
-    console.log("Data for Div")
-    console.log(div)
-    console.log(data)
+    //console.log("Data for Div")
+    //console.log(div)
+    //console.log(data)
 
     GRAPHS[div]['graph'] = new Dygraph(document.getElementById(graph_div),
                            data,
@@ -117,9 +129,9 @@ stackchange = function(el) {
   Template.hello.helpers({
     uploadPercent: function() {
        filesCount = Session.get("filesCount")
-       console.log('filesCount:  '+filesCount)
+       //console.log('filesCount:  '+filesCount)
        filesLoaded = Session.get("filesLoaded")
-       console.log('filesLoaded:  '+filesLoaded)
+       //console.log('filesLoaded:  '+filesLoaded)
        if ((filesCount > 0) && (filesLoaded != undefined)) {
           console.log("Returning:  "+filesLoaded/filesCount)
           return ((filesLoaded/filesCount)*100).toFixed(0)
@@ -158,7 +170,7 @@ stackchange = function(el) {
           for (var i=0; i <  result.metrics.length; i++) {
             GRAPHS[result.metrics[i]]={} 
             GRAPHS[result.metrics[i]]['graph']={} 
-            console.log ("Graphing div:  "+result.metrics[i])
+            //console.log ("Graphing div:  "+result.metrics[i])
             var div=result.metrics[i]
             //console.log(LAGER[div])
             graphit(div, result[div], 100)
@@ -168,7 +180,7 @@ stackchange = function(el) {
     })
     //LAGER=returnReport(reportsId)
     //LAGER=report(reportsId)
-    console.log(LAGER)
+    //console.log(LAGER)
   }
 
 
@@ -266,6 +278,7 @@ stackchange = function(el) {
       var write_miss_re = /^CTL    LU  Write CMD Miss Count/
       var read_job_re = /^CTL    LU    Read CMD Job Count/
       var write_job_re = /^CTL    LU   Write CMD Job Count/
+      var backend_re = /^CTL Path        IO Rate\(IOPS\)/
 
       for (i=0; i < fileList.length; i++) {
         var reader = new FileReader()
@@ -366,6 +379,13 @@ stackchange = function(el) {
                count_field=2
                response_field=3
                return true
+             } else if (backend_re.test(line)) {
+               console.log('Matched back-end pattern')
+               console.log(line)
+               metric='BACKEND_IOPS'
+               series_fields=[0,1]
+               data_fields[metric]=2
+               return true
              }
              switch (metric) {
                case 'CPU':
@@ -403,6 +423,39 @@ stackchange = function(el) {
                        }
                     }
                  }
+                 // We'll build the read, write and front vs. backend values here and then calculate
+                 // them on finishA
+                 if (metric === 'Port') {
+                   console.log('Building read vs. write using Port data')
+                   LAGER['READ_IOPS']['labels'][serial]=1
+                   if (LAGER['READ_IOPS']['data'][start] === undefined) {
+                     LAGER['READ_IOPS']['data'][start]={}
+                     LAGER['READ_IOPS']['data'][start][serial]=0
+                   }
+                   LAGER['READ_IOPS']['data'][start][serial] += parseFloat(temp_line[3])
+                   //
+                   LAGER['FRONT_IOPS']['labels'][serial]=1
+                   if (LAGER['FRONT_IOPS']['data'][start] === undefined) {
+                     LAGER['FRONT_IOPS']['data'][start]={}
+                     LAGER['FRONT_IOPS']['data'][start][serial]=0
+                   }
+                   LAGER['FRONT_IOPS']['data'][start][serial] += parseFloat(temp_line[2])
+                   //console.log(temp_line)
+                   //console.log(start + ' reads ' + LAGER['READ_IOPS'][start])
+                 }
+                 break
+               case 'BACKEND_IOPS':
+                 temp_line=line.split(/\s+/)
+                 //console.log(line)
+                 //console.log(temp_line)
+                 //console.log('Building BACKEND_IOPS')
+                 LAGER['BACKEND_IOPS']['labels'][serial]=1
+                 if (LAGER['BACKEND_IOPS']['data'][start] === undefined) {
+                   LAGER['BACKEND_IOPS']['data'][start]={}
+                   LAGER['BACKEND_IOPS']['data'][start][serial]=0
+                 }
+                 //console.log(temp_line)
+                 LAGER['BACKEND_IOPS']['data'][start][serial] += parseFloat(temp_line[2])
                  break
                case 'LUN_READ_RESPONSE':
                case 'LUN_WRITE_RESPONSE':
@@ -446,6 +499,18 @@ stackchange = function(el) {
            //console.log('Filecount:  '+filecount+'  fileList.length:  '+fileList.length)
            if (filecount >= fileList.length) {
               for (var time in LAGER['LUN_IOPS']['data']) {
+                 //console.log(time)
+                 //console.log( LAGER['READ_IOPS']['data'][time][serial] + '/' +  LAGER['FRONT_IOPS']['data'][time][serial])
+                 if (LAGER['READ_PERCENT']['data'][time] === undefined) {
+                   LAGER['READ_PERCENT']['data'][time] = {}
+                 }
+                 LAGER['READ_PERCENT']['data'][time][serial] = LAGER['READ_IOPS']['data'][time][serial] / LAGER['FRONT_IOPS']['data'][time][serial]
+                 LAGER['READ_PERCENT']['labels'][serial]=1
+                 if (LAGER['BACK_END']['data'][time] === undefined) {
+                   LAGER['BACK_END']['data'][time] = {}
+                 }
+                 LAGER['BACK_END']['data'][time][serial] = LAGER['BACKEND_IOPS']['data'][time][serial] / LAGER['FRONT_IOPS']['data'][time][serial]
+                 LAGER['BACK_END']['labels'][serial]=1
                  if (LAGER['LUN_IOPS']['data'].hasOwnProperty(time)) {
                     for (var lun in LAGER['LUN_IOPS']['data'][time]) {
                        if (LAGER['LUN_IOPS']['data'][time].hasOwnProperty(lun)) {
@@ -484,7 +549,9 @@ stackchange = function(el) {
                   console.log ("Graphing div:  "+LAGER.metrics[i])
                   var div=LAGER.metrics[i]
                   //console.log(LAGER[div])
-                  graphit(div, LAGER[div], 100)
+                  if ((div != 'READ_IOPS') && (div != 'FRONT_IOPS') && (div != 'BACKEND_IOPS')) {
+                    graphit(div, LAGER[div], 100)
+                  }
                 }
               }
            }
