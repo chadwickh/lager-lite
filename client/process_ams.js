@@ -18,6 +18,7 @@
   var read_job_re = /^CTL    LU    Read CMD Job Count/;
   var write_job_re = /^CTL    LU   Write CMD Job Count/;
   var backend_re = /^CTL Path        IO Rate\(IOPS\)/;
+  var skipped_re = /skipped/
 
 
   process_ams = function(lines) {
@@ -29,7 +30,7 @@
        if (start_re.test(line)) {
          sample=parseInt(line.split('.')[1])-1
          //console.log('Now processing sample:  ' + sample)
-       } else if (date_re.test(line)) {
+       } else if ((date_re.test(line)) && (!(skipped_re.test(line)))) {
          info = line.split('-')
          //start = new Date(info[0].replace(/\s+$/,'').replace('"',''))
          //end = new Date(info[1].replace(/\s+$/,'').replace('"',''))
