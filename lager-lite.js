@@ -10,7 +10,7 @@ Meteor.methods({
 
 LAGER = {}
 GRAPHS= {}
-LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_MBPS', 'LUN_IOPS', 'LUN_MBPS', 'LUN_TAGS', 'LUN_RESPONSE', 'LUN_READ_RESPONSE', 'LUN_WRITE_RESPONSE', 'DISK_BUSY', 'BLOCK_SIZE', 'READ_PERCENT', 'BACK_END', 'READ_IOPS', 'FRONT_IOPS', 'BACKEND_IOPS']
+LAGER.metrics=['CPU', 'CWP', 'Port_IOPS', 'Port_MBPS', 'DP_IOPS', 'DP_READ_IOPS', 'DP_WRITE_IOPS', 'DP_MBPS', 'DP_READ_MBPS', 'DP_WRITE_MBPS', 'LUN_IOPS', 'LUN_READ_IOPS', 'LUN_WRITE_IOPS', 'LUN_MBPS', 'LUN_READ_MBPS', 'LUN_WRITE_MBPS', 'LUN_TAGS', 'LUN_RESPONSE', 'LUN_READ_RESPONSE', 'LUN_WRITE_RESPONSE', 'DISK_BUSY', 'BLOCK_SIZE', 'READ_PERCENT', 'BACK_END', 'READ_IOPS', 'FRONT_IOPS', 'BACKEND_IOPS']
   for (var i=0; i <  LAGER.metrics.length; i++) {
     var div=LAGER.metrics[i]
     LAGER[LAGER.metrics[i]]={}
@@ -38,7 +38,7 @@ if (Meteor.isClient) {
 stackchange = function(el) {
     split_div=$(el).attr('id').split('_')
     console.log(split_div)
-    selected_div=split_div.slice(0,2).join('_')
+    selected_div=split_div.slice(0,-1).join('_')
     console.log(selected_div)
     if (el.checked) {
       //console.log("Checked")
@@ -55,6 +55,72 @@ stackchange = function(el) {
     }
   }
 
+<<<<<<< HEAD
+processZip = function(inputZip) {
+  //console.log("In process zip with input:");
+  //console.log(inputZip);
+  var zip = inputZip;
+  for (var fileInZip in zip.files) {
+    //console.log(fileInZip);
+    if (/\/$/.test(fileInZip)) {
+      //console.log("Is a directory, skipping...")
+    } else if ((/\.ZIP$/.test(fileInZip)) || (/\.zip$/.test(fileInZip))) {
+      //console.log("Nested Zip file - recursing");
+      var nestedZip = new JSZip(zip.file(fileInZip).asArrayBuffer());
+      processZip(nestedZip);
+    } else {
+      //console.log(typeof(fileInZip));
+      var lines = zip.file(fileInZip).asText().split('\n');
+      //console.log("First line of file is:");
+      //console.log(lines[0]);
+      if (/^No\./.test(lines[0])) {
+        //console.log("This is pfm data - processing");
+        process_ams(lines);
+      } else {
+        //console.log("This is data from Export Tool - processing");
+      }
+    }
+  }
+}
+
+buildCSV = function(LAGER) {
+  var zip = new JSZip();
+  var zipOut="";
+  //console.log("In buildCSV with input:");
+  //console.log(LAGER);
+  for (var metric in LAGER) {
+    //console.log(metric);
+    var header="Time";
+    if ((LAGER[metric]) && (LAGER[metric]['labels'])) {
+      for (var label in LAGER[metric]['labels']) {
+        //console.log(label);
+        header=header+",'"+label+"'";
+      }
+      header=header+"\n";
+      zipOut=header;
+    //console.log(header);
+        for (var time in LAGER[metric]['data']) {
+          var outTime=moment.unix(time/1000).format("MM/DD/YYYY HH:mm");
+          //console.log(time);
+          //console.log(outTime);
+          var data="";
+          data=data+outTime+",";
+          for (var label in LAGER[metric]['labels']) {
+            data=data+LAGER[metric]['data'][time][label]+",";  
+          }
+          data=data+"\n";
+          zipOut=zipOut+data;
+          //console.log(zipOut);
+      }
+      zip.file(metric+".csv", zipOut)
+    }
+  }
+  var content = zip.generate({type:"blob"});
+  saveAs(content,"lager-lite.zip");
+}
+
+=======
+>>>>>>> 2abc776181efce46f5c9deecc00e5fb9920d4eae
   Template.hello.helpers({
     uploadPercent: function() {
        filesCount = Session.get("filesCount")
@@ -198,7 +264,11 @@ stackchange = function(el) {
         var zipReader = new FileReader()
         console.log(fileList[i].type);
 
+<<<<<<< HEAD
+        if ((fileList[i].type === "application/x-zip-compressed") || (fileList[i].type === "application/zip")) {
+=======
         if (fileList[i].type === "application/x-zip-compressed") {
+>>>>>>> 2abc776181efce46f5c9deecc00e5fb9920d4eae
           console.log("This is a zip file");
           console.log(fileList[i].name);
           zipReader.readAsArrayBuffer(fileList[i]);
@@ -206,6 +276,17 @@ stackchange = function(el) {
         } else {
           reader.readAsText(fileList[i])
         }
+<<<<<<< HEAD
+
+        zipReader.onload = function (e) {
+          //console.log("In zipReader onload section");
+          var zip = new JSZip(e.target.result);
+          // We're calling a recursive function to process zip files - since they can be nested this seems
+          // like an ideal use case
+          processZip(zip);
+        }
+
+=======
 
         zipReader.onload = function (e) {
           console.log("In zipReader onload section");
@@ -227,10 +308,15 @@ stackchange = function(el) {
           }
         }
 
+>>>>>>> 2abc776181efce46f5c9deecc00e5fb9920d4eae
         zipReader.onloadend = function(e) {
           postprocess_ams();
           console.log(moment().format());
           console.log("Ended");
+<<<<<<< HEAD
+          //buildCSV(LAGER);
+=======
+>>>>>>> 2abc776181efce46f5c9deecc00e5fb9920d4eae
         }
 
         reader.onload = function(e) {
@@ -244,6 +330,10 @@ stackchange = function(el) {
           postprocess_ams();
           console.log(moment().format());
           console.log("Ended");
+<<<<<<< HEAD
+          //buildCSV(LAGER);
+=======
+>>>>>>> 2abc776181efce46f5c9deecc00e5fb9920d4eae
         }
       }
     }
@@ -275,5 +365,4 @@ if (Meteor.isServer) {
       return true
     } 
   })
-
 }
