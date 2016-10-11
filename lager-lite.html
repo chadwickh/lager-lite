@@ -127,9 +127,17 @@
         <li><a href="#Port_IOPS" data-toggle="tab">Port IOPS</a></li>
         <li><a href="#Port_MBPS" data-toggle="tab">Port MBPS</a></li>
         <li><a href="#DP_IOPS" data-toggle="tab">DP Pool IOPS</a></li>
+        <li><a href="#DP_READ_IOPS" data-toggle="tab">DP Pool Read IOPS</a></li>
+        <li><a href="#DP_WRITE_IOPS" data-toggle="tab">DP Pool Write IOPS</a></li>
         <li><a href="#DP_MBPS" data-toggle="tab">DP Pool MBPS</a></li>
+        <li><a href="#DP_READ_MBPS" data-toggle="tab">DP Pool Read MBPS</a></li>
+        <li><a href="#DP_WRITE_MBPS" data-toggle="tab">DP Pool Write MBPS</a></li>
         <li><a href="#LUN_IOPS" data-toggle="tab">LUN IOPS</a></li>
+        <li><a href="#LUN_READ_IOPS" data-toggle="tab">LUN Read IOPS</a></li>
+        <li><a href="#LUN_WRITE_IOPS" data-toggle="tab">LUN Write IOPS</a></li>
         <li><a href="#LUN_MBPS" data-toggle="tab">LUN MBPS</a></li>
+        <li><a href="#LUN_READ_MBPS" data-toggle="tab">LUN Read MBPS</a></li>
+        <li><a href="#LUN_WRITE_MBPS" data-toggle="tab">LUN Write MBPS</a></li>
         <li><a href="#LUN_TAGS" data-toggle="tab">LUN Tags (Queue Depth)</a></li>
         <li><a href="#LUN_RESPONSE" data-toggle="tab">LUN Response (usecs)</a></li>
         <li><a href="#LUN_READ_RESPONSE" data-toggle="tab">LUN Read Response (usecs)</a></li>
@@ -172,12 +180,40 @@
           </div>
            <input type=checkbox class="checkbox1" id=DP_IOPS_stacked onClick="stackchange(this)"> Stack Series
         </div>
+        <div class="tab-pane" id="DP_READ_IOPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="DP_READ_IOPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DP_READ_IOPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=DP_READ_IOPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>
+        <div class="tab-pane" id="DP_WRITE_IOPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="DP_WRITE_IOPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DP_WRITE_IOPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=DP_WRITE_IOPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>
         <div class="tab-pane" id="DP_MBPS">
           <div class="col-md-12">
            <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="DP_MBPS_chart"></div>
            <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DP_MBPS_legend"></div>
           </div>
            <input type=checkbox class="checkbox1" id=DP_MBPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>
+        <div class="tab-pane" id="DP_READ_MBPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="DP_READ_MBPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DP_READ_MBPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=DP_READ_MBPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>
+        <div class="tab-pane" id="DP_WRITE_MBPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="DP_WRITE_MBPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="DP_WRITE_MBPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=DP_WRITE_MBPS_stacked onClick="stackchange(this)"> Stack Series
         </div>
         <div class="tab-pane" id="LUN_IOPS">
           <div class="col-md-12">
@@ -186,12 +222,40 @@
           </div>
            <input type=checkbox class="checkbox1" id=LUN_IOPS_stacked onClick="stackchange(this)"> Stack Series
         </div>
+        <div class="tab-pane" id="LUN_READ_IOPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_READ_IOPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_READ_IOPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=LUN_READ_IOPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>
+        <div class="tab-pane" id="LUN_WRITE_IOPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_WRITE_IOPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_WRITE_IOPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=LUN_WRITE_IOPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>_
         <div class="tab-pane" id="LUN_MBPS">
           <div class="col-md-12">
            <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_MBPS_chart"></div>
            <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_MBPS_legend"></div>
           </div>
            <input type=checkbox class="checkbox1" id=LUN_MBPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>
+        <div class="tab-pane" id="LUN_READ_MBPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_READ_MBPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_READ_MBPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=LUN_READ_MBPS_stacked onClick="stackchange(this)"> Stack Series
+        </div>
+        <div class="tab-pane" id="LUN_WRITE_MBPS">
+          <div class="col-md-12">
+           <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_WRITE_MBPS_chart"></div>
+           <div class="col-md-4 labeldiv" style="width:15vw;height:65vh;"  id="LUN_WRITE_MBPS_legend"></div>
+          </div>
+           <input type=checkbox class="checkbox1" id=LUN_WRITE_MBPS_stacked onClick="stackchange(this)"> Stack Series
         </div>
         <div class="tab-pane" id="LUN_TAGS">
            <div class="col-md-8 chartdiv many"  style="width:65vw;height:65vh;" id="LUN_TAGS_chart"></div>
